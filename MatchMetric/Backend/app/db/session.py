@@ -27,10 +27,31 @@ engine = create_engine(
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
 def get_db() -> Generator[Session, None, None]:
+    """Dependency injection helper for FastAPI routes.
+
+    Yields a database session and ensures it's closed after the request.
+    """
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-        
 
+
+def init_db() -> None:
+    """Create all database tables based on SQLAlchemy models.
+
+    This uses Base.metadata.create_all() which is idempotent - it won't
+    recreate tables that already exist. Safe to call multiple times.
+    """
+    Base.metadata.create_all(bind=engine)
+    print(f"✓ Database initialized at: {DATABASE_URL}")
+
+
+def drop_db() -> None:
+    """Drop all database tables. USE WITH CAUTION - destroys all data!
+
+    Useful for development/testing when you need a fresh start.
+    """
+    Base.metadata.drop_all(bind=engine)
+    print(f"✓ All tables dropped from: {DATABASE_URL}")
